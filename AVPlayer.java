@@ -1,6 +1,10 @@
 package courseProject;
 
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.awt.image.*;
 import java.io.*;
 
@@ -8,6 +12,7 @@ import javax.swing.*;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 
 
 
@@ -99,7 +104,7 @@ public class AVPlayer {
 				try   
 				{   
 				Thread.currentThread();
-				Thread.sleep(100);//ºÁÃë   
+				Thread.sleep(100);//æ¯«ç§’   
 				}   
 				catch(Exception e){}  
 				 
@@ -178,19 +183,37 @@ public class AVPlayer {
 		    System.err.println("usage: java -jar AVPlayer.jar [RGB file] [WAV file]");
 		    return;
 		}
+		/*PipedOutputStream pos = new PipedOutputStream();
+		PipedInputStream  pis = new PipedInputStream();
+		try {
+			pos.connect(pis);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}*/
 		//AVPlayer ren = new AVPlayer();
 		//ren.initialize(args);
 		//ren.playWAV(args[1]);
-		new playS(args[1]).start();
-		new playV(args).start();
+		Num i = new Num(0,0);
+		new playS(args[1],i).start();
+		new playV(args,i).start();
 	}
 
 }
 class playS extends Thread{
 	String filename;
-	public playS(String arg){
+	Num SoundPause;
+	public playS(String arg,Num i){
 		filename = new String(arg);
+		this.SoundPause = i;
 	}
+	/*try {
+		SoundPause = pis.read();
+	} catch (IOException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}*/
+	
 	public void run(){
 		// opens the inputStream
 		FileInputStream inputStream;
@@ -202,32 +225,41 @@ class playS extends Thread{
 		}
 
 		// initializes the playSound Object
-		PlaySound playSound = new PlaySound(inputStream);
+		PlaySound playSound = new PlaySound(inputStream,SoundPause);
 	
 		// plays the sound
 		try {
-			playSound.play();
+				playSound.play();
 		} catch (PlayWaveException e) {
 			e.printStackTrace();
 			return;
-		}
+		} 
+		
+		
 	}
 }
 
 class playV extends Thread{
 	String args[];
-	public playV(String arg[]){
+	//volatile int VideoPause = -1;
+	Num VideoPause;
+	public playV(String arg[],Num i){
 		args = arg;
+		this.VideoPause = i;
 	}
 	public void run(){
 		JFrame frame;
 		JLabel lbIm1;
 		JLabel lbIm2;
 		BufferedImage img;
+		Button btn1 = new Button("Play");
+		Button btn2 = new Button("Pause");
+		Button btn3 = new Button("Stop");
 		int width = 480;
 		int height = 270;
 
 		img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+		
 		
 		// Use labels to display the images
 				frame = new JFrame();
@@ -239,7 +271,102 @@ class playV extends Thread{
 				JLabel lbText2 = new JLabel("Audio: " + args[1]);
 				lbText2.setHorizontalAlignment(SwingConstants.LEFT);
 				//lbIm1 = new JLabel(new ImageIcon(img));
+				
+				//btn1.setBounds(123,231, 100, 100);
+				//btn2.setBounds(0,1,1,1);
+				
+				GridBagConstraints c = new GridBagConstraints();
+				c.fill = GridBagConstraints.HORIZONTAL;
+				c.anchor = GridBagConstraints.CENTER;
+				c.weightx = 0.5;
+				c.gridx = 0;
+				c.gridy = 0;
+				//frame.getContentPane().add(lbText1, c);
+				frame.add(lbText1,c);
 
+				c.fill = GridBagConstraints.HORIZONTAL;
+				c.anchor = GridBagConstraints.CENTER;
+				c.weightx = 0.5;
+				c.gridx = 0;
+				c.gridy = 1;
+				//frame.getContentPane().add(lbText2, c);
+				frame.add(lbText2,c);
+				
+				
+				c.fill = GridBagConstraints.NONE;
+				c.anchor = GridBagConstraints.WEST;
+				c.weightx = 0.5;
+				c.gridx = 0;
+				c.gridy = 3;
+				frame.add(btn1, c);
+				
+				c.fill = GridBagConstraints.NONE;
+				c.anchor = GridBagConstraints.CENTER;
+				c.weightx = 0.5;
+				c.gridx = 0;
+				c.gridy = 3;
+				frame.add(btn2, c);
+				
+				c.fill = GridBagConstraints.NONE;
+				c.anchor = GridBagConstraints.EAST;
+				c.weightx = 0.5;
+				c.gridx = 0;
+				c.gridy = 3;
+				frame.add(btn3, c);
+				
+				c.fill = GridBagConstraints.HORIZONTAL;
+				c.anchor = GridBagConstraints.CENTER;
+				c.weightx = 0.5;
+				c.gridx = 0;
+				c.gridy = 2;
+				
+				btn1.setActionCommand("play");
+				btn1.addActionListener(new ActionListener(){
+					public void actionPerformed(ActionEvent e){
+						VideoPause.i = 0;
+						/*try {
+							pos.write(0);
+						} catch (IOException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}*/
+					}
+				});
+				btn2.setActionCommand("pause");
+				btn2.addActionListener(new ActionListener(){
+					public void actionPerformed(ActionEvent e){
+						VideoPause.i = 1;
+						/*try {
+							pos.write(1);
+							System.out.println("Pipeline output 1");
+						} catch (IOException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}*/
+					}
+				});
+				btn3.setActionCommand("stop");
+				btn3.addActionListener(new ActionListener(){
+					public void actionPerformed(ActionEvent e){
+						VideoPause.i = -1;
+						VideoPause.j = 1;
+						/*try {
+							pos.write(-1);
+						} catch (IOException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}*/
+					}
+				});
+				
+				
+				
+				
+				frame.addWindowListener(new WindowAdapter(){
+					public void windowClosing(WindowEvent e){
+						System.exit(0);
+					}
+				});
 
 		try {
 			File file = new File(args[0]);
@@ -253,6 +380,16 @@ class playV extends Thread{
 			long frameRead = 0;
 
 			while(frameRead < frame_num){
+				//System.out.print(frameRead);
+				//System.out.println(frameRead + ", " + VideoPause);
+				while(VideoPause.i == 1);
+				if(VideoPause.i == -1){
+					is.close();
+					is = new FileInputStream(file);
+					VideoPause.i = 1;
+				}
+				//if(VideoPause == 0){
+				
 				int offset = 0;
 				int numRead = 0;
 				while (offset < bytes.length && (numRead=is.read(bytes, offset, bytes.length-offset)) >= 0) {
@@ -277,45 +414,38 @@ class playV extends Thread{
 					}
 				}
 				lbIm1 = new JLabel(new ImageIcon(img));
-				
-				GridBagConstraints c = new GridBagConstraints();
-				c.fill = GridBagConstraints.HORIZONTAL;
-				c.anchor = GridBagConstraints.CENTER;
-				c.weightx = 0.5;
-				c.gridx = 0;
-				c.gridy = 0;
-				frame.getContentPane().add(lbText1, c);
-
-				c.fill = GridBagConstraints.HORIZONTAL;
-				c.anchor = GridBagConstraints.CENTER;
-				c.weightx = 0.5;
-				c.gridx = 0;
-				c.gridy = 1;
-				frame.getContentPane().add(lbText2, c);
-
-				c.fill = GridBagConstraints.HORIZONTAL;
-				c.gridx = 0;
-				c.gridy = 2;
-				frame.getContentPane().add(lbIm1, c);
+				//frame.getContentPane().add(lbIm1, c);
+				frame.add(lbIm1, c);
 
 				frame.pack();
 				frame.setVisible(true);
 				
+				
 				try   
 				{   
 				Thread.currentThread();
-				Thread.sleep(60);//ºÁÃë   
+				Thread.sleep(60);//æ¯«ç§’   
 				}   
 				catch(Exception e){}  
 				 
 			}
 
-
+			//}
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		
+		
+	}
+}
+
+class Num{
+	volatile int i;
+	volatile int j;
+	public Num(int n,int j){
+		this.i = n;
+		this.j = j;
 	}
 }
