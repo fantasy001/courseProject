@@ -3,6 +3,7 @@ package courseProject;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PipedInputStream;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
@@ -19,17 +20,19 @@ import javax.sound.sampled.DataLine.Info;
  * @author Giulio
  */
 public class PlaySound {
-
+	
     private InputStream waveStream;
 
     private final int EXTERNAL_BUFFER_SIZE = 524288; // 128Kb
-
+    
+    Num SoundPause;
     /**
      * CONSTRUCTOR
      */
-    public PlaySound(InputStream waveStream) {
+    public PlaySound(InputStream waveStream, Num i) {
 	//this.waveStream = waveStream;
 	this.waveStream = new BufferedInputStream(waveStream);
+	this.SoundPause = i;
     }
 
 	public void play() throws PlayWaveException {
@@ -57,26 +60,33 @@ public class PlaySound {
 	}
 
 	// Starts the music :P
-	dataLine.start();
-
-	int readBytes = 0;
-	byte[] audioBuffer = new byte[this.EXTERNAL_BUFFER_SIZE];
-
-	try {
-	    while (readBytes != -1) {
-		readBytes = audioInputStream.read(audioBuffer, 0,
-			audioBuffer.length);
-		if (readBytes >= 0){
-		    dataLine.write(audioBuffer, 0, readBytes);
+		dataLine.start();
+	
+		int readBytes = 0;
+		//byte[] audioBuffer = new byte[this.EXTERNAL_BUFFER_SIZE];
+		byte[] audioBuffer = new byte[512];
+		try {
+		    while (readBytes != -1) {
+		    	 System.out.println(SoundPause.i);
+		    while(SoundPause.i == 1){
+		    	if(SoundPause.j == 1) {
+		    		System.exit(0);
+		    	}
+		    }
+			readBytes = audioInputStream.read(audioBuffer, 0,
+				audioBuffer.length);
+			//System.out.println("read audio buffer, " + SoundPause);
+			if (readBytes >= 0){
+			    dataLine.write(audioBuffer, 0, readBytes);
+			}
+		    }
+		} catch (IOException e1) {
+		    throw new PlayWaveException(e1);
+		} finally {
+		    // plays what's left and and closes the audioChannel
+		    dataLine.drain();
+		    dataLine.close();
 		}
-	    }
-	} catch (IOException e1) {
-	    throw new PlayWaveException(e1);
-	} finally {
-	    // plays what's left and and closes the audioChannel
-	    dataLine.drain();
-	    dataLine.close();
-	}
 
     }
 }
