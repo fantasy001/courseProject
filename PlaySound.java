@@ -1,4 +1,4 @@
-
+package courseProject;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
