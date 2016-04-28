@@ -1,4 +1,4 @@
-package courseProject;
+
 
 import java.awt.*;
 import java.awt.image.*;
@@ -99,7 +99,7 @@ public class AVPlayer {
 				try   
 				{   
 				Thread.currentThread();
-				Thread.sleep(100);//ºÁÃë   
+				Thread.sleep(100);//ï¿½ï¿½ï¿½ï¿½   
 				}   
 				catch(Exception e){}  
 				 
@@ -304,7 +304,7 @@ class playV extends Thread{
 				try   
 				{   
 				Thread.currentThread();
-				Thread.sleep(60);//ºÁÃë   
+				Thread.sleep(60);//ï¿½ï¿½ï¿½ï¿½   
 				}   
 				catch(Exception e){}  
 				 

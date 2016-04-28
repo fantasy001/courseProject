@@ -1,6 +1,25 @@
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+
+import javax.swing.ImageIcon;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.SwingConstants;
+
 
 
 public class similarityCompare {
+	static int targetWidth = 480;
+	static int targetHeight = 270;
+	static byte []targetImg = new byte[targetWidth * targetHeight * 3];
 	
 	public static double  computeSimilarity(byte xR, byte xG, byte xB, byte yR, byte yG, byte yB)
 	{
@@ -123,8 +142,8 @@ public class similarityCompare {
 		          + ((a1 - a2) * (a1 - a2))
 		          + ((b1 - b2) * (b1 - b2)));
 		
-		//The following code has been changed
-		/*previous
+		//The code has been changed
+		
 		double xDH = 0;
 		if ( 
 				Math.sqrt( xDE ) > ( 
@@ -138,10 +157,8 @@ public class similarityCompare {
 		   xDH = 0;
 		}
 		
-		*/
-		//New code
-		double xDH = Math.sqrt( ( xDE * xDE ) - ( xDL * xDL ) - ( xDC * xDC ));
-		//New code end
+		
+		
 		double xSC = 1 + ( 0.045 * xC1 );
 		double xSH = 1 + ( 0.015 * xC1 );
 		xDL /= 1;
@@ -150,10 +167,240 @@ public class similarityCompare {
 		
 		return Math.sqrt( Math.pow(xDL, 2) + Math.pow(xDC, 2) + Math.pow(xDH,2));
 	}
+	//This is used to test show the single image
+	public static void showSingleImage(byte[] imgData, String title){
+		JFrame frame = new JFrame();
+		JLabel lbIm1;
+
+		BufferedImage img = new BufferedImage(targetWidth, targetHeight, BufferedImage.TYPE_INT_RGB);;
+		
+		 int ind = 0;
+         for(int y = 0; y < targetHeight; y++){
+             for(int x = 0; x < targetWidth; x++){
+
+                 byte r = imgData[ind];
+                 byte g = imgData[ind + targetWidth * targetHeight];
+                 byte b = imgData[ind + targetWidth * targetHeight *2]; 
+
+                 int pix = 0xff000000 | ((r & 0xff) << 16) | ((g & 0xff) << 8) | (b & 0xff);
+
+                 //int pix = ((a << 24) + (r << 16) + (g << 8) + b);
+                 img.setRGB(x,y,pix);
+                 ind++;
+
+             }
+
+         }
+		
+		frame = new JFrame();
+
+        GridBagLayout gLayout = new GridBagLayout();
+
+        frame.getContentPane().setLayout(gLayout);
+
+        
+        JLabel lbText1 = new JLabel(title);
+
+        lbText1.setHorizontalAlignment(SwingConstants.CENTER);
+
+        lbIm1 = new JLabel(new ImageIcon(img));
+
+        GridBagConstraints c = new GridBagConstraints();
+
+        c.fill = GridBagConstraints.HORIZONTAL;
+
+        c.anchor = GridBagConstraints.CENTER;
+
+        c.weightx = 0.5;
+
+        c.gridx = 0;
+
+        c.gridy = 0;
+
+        frame.getContentPane().add(lbText1, c);
+
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.gridx = 0;
+        c.gridy = 1;
+        frame.getContentPane().add(lbIm1, c);
+
+        frame.pack();
+        frame.setVisible(true);		
+	}
+	
+	
+	
+	
+    //args[0] = "Alin_Day1_002.rgb"
+	//args[1] = "12651.rgb"
+	public ArrayList compareStreamWithSingleImage(String[] args, int subsample, int topK, ArrayList <String> myListWords){
+		JFrame frame;
+		JLabel lbIm1;
+		JLabel lbIm2;
+	   
+        //This is the original size of the picture
+		int width = 1280;
+		int height = 720;
+		byte []comparingImg = new byte[targetWidth * targetHeight * 3];
+		ArrayList <byte []> myList = new ArrayList<byte[]> ();
+		
+
+		try {
+
+            //read image two and compress it to 480 * 270
+			File file = new File(args[1]);
+			InputStream is = new FileInputStream(file);
+			long len = width * height * 3;
+			byte[] bytes = new byte[(int)len];
+
+			int offset = 0;
+			int numRead = 0;
+			while (offset < bytes.length && (numRead=is.read(bytes, offset, bytes.length-offset)) >= 0) {
+				offset += numRead;
+			}
+
+			int ind = 0;
+			for(int y = 0; y < height; y++){
+				for(int x = 0; x < width; x++){
+					byte r = bytes[ind];
+					byte g = bytes[ind+height*width];
+					byte b = bytes[ind+height*width*2]; 
+					//Save the comparing image only save to 480 * 270 format
+					if (
+							( x % 8 == 0 || x % 8 == 3 || x % 8 == 6) &&
+							( y % 8 == 0 || y % 8 == 3 || y % 8 == 6)
+					   )
+					{
+						int newX = x / 8 * 3 + x % 8 / 3;
+						int newY = y / 8 * 3 + y % 8 / 3;
+						comparingImg[newX + newY * targetWidth] = r;
+						comparingImg[newX + newY * targetWidth + targetHeight * targetWidth] = g;
+						comparingImg[newX + newY * targetWidth + targetHeight * targetWidth * 2] = b;
+						
+					}
+					ind++;
+				}
+			}
+			System.out.println("compress to 480 * 270 successful!");
+			
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		myList.add(comparingImg);
+		myListWords.add("Original pic");
+		
+		//Read the image stream and compare it with the comparing image
+		double diffResult = 0;
+		double minResult = Double.MAX_VALUE;
+		
+		try {
+			File file = new File(args[0]);
+			InputStream is = new FileInputStream(file);
+
+			long len = targetWidth * targetHeight * 3;
+			long file_len = file.length();
+			byte[] bytes = new byte[(int)len];
+			long frame_num = file_len / len;
+			long frameRead = 0;
+
+			while(frameRead < frame_num){
+				int offset = 0;
+				int numRead = 0;
+				while (offset < bytes.length && (numRead=is.read(bytes, offset, bytes.length-offset)) >= 0) {
+					offset += numRead;
+				}
+				frameRead++;
+	
+				int ind = 0;
+				int quickerCompute = 0;
+				diffResult = 0;
+				byte[] tmpBytes = new byte[targetHeight * targetWidth * 3];
+				
+				for(int y = 0; y < targetHeight; y++){
+					for(int x = 0; x < targetWidth; x++){
+	
+						byte r = bytes[ind];
+						byte g = bytes[ind + targetHeight * targetWidth];
+						byte b = bytes[ind + targetHeight * targetWidth * 2]; 
+						//Save the image in a tmp array
+						
+						
+						tmpBytes[ind] = r;
+						tmpBytes[ind + targetHeight * targetWidth] = g;
+						tmpBytes[ind + targetHeight * targetWidth * 2] = b; 
+								
+						
+						//This is for image 2
+						byte r2 = comparingImg[ind];
+						byte g2 = comparingImg[ind + targetHeight * targetWidth];
+						byte b2 = comparingImg[ind + targetHeight * targetWidth * 2]; 
+	
+						if (ind % subsample == 0)
+						{	
+							
+							if (diffResult > minResult)
+							{
+								x = targetWidth;
+								y = targetHeight;
+								break;
+							}
+							diffResult += Math.pow(computeSimilarity(r,g,b, r2, g2, b2), 2);
+						}
+						
+						
+						
+						ind++;
+					}
+					
+					
+					
+				}
+				
+				
+				
+			    if (diffResult < minResult)
+			    {
+			    	
+			    	minResult = diffResult;
+			    	//showSingleImage(tmpBytes, "image Number = " + frameRead + " LAB Diff = " + diffResult);
+			    	
+			    	System.out.println("image Number = " + frameRead + " LAB Diff = " + diffResult);
+			    	if (myList.size() == topK + 1)
+			    	{	
+			    		myListWords.remove(1);
+			    		myList.remove(1);
+			    		
+			    		
+			    	}
+			    	myListWords.add("image Number = " + frameRead + " LAB Diff = " + diffResult);
+		    		myList.add(tmpBytes);
+			    }
+			    
+			    }
+				 
+			}catch (IOException e) {
+			e.printStackTrace();
+			} 
+		
+		
+		
+		
+		
+		return myList;
+	}
+	
+	
+	
+	
+	
+	
 	
 	
 	
 	public static void main(String[] args) {
+		/*
 		double xyz[] = {0,0,0};
 		double lab[] = {0,0,0};
 		byte r = 5;
@@ -169,5 +416,19 @@ public class similarityCompare {
 		System.out.println("x = " + xyz[0] + "\n" + "y = " + xyz[1] + "\n" + "z = " + xyz[2]);
 		System.out.println("L = " + lab[0] + "\n" + "A = " + lab[1] + "\n" + "B = " + lab[2]);
 		System.out.println("Delta E94 value should be = " + computeSimilarity(r,g,b, r2,g2,b2));
+
+		*/
+		similarityCompare simComp = new similarityCompare();
+		ArrayList <byte[]> myList = new ArrayList<byte[]>();
+        String []filenames ={"Alin_Day1_002.rgb", "16192.rgb"};
+        ArrayList <String> myListWords = new ArrayList<String>();
+		myList = simComp.compareStreamWithSingleImage(filenames, 4, 10, myListWords);
+		
+		for (int i = 0; i < myList.size(); i++)
+		{
+			showSingleImage(myList.get(i), "Top" + (myList.size() - i)+ " Match " + myListWords.get(i));
+		}
+	
+		
 	}
 }
