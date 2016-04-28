@@ -26,6 +26,10 @@ public class PlaySound {
     private final int EXTERNAL_BUFFER_SIZE = 524288; // 128Kb
     
     Num SoundPause;
+    
+    int AUDIO_SEGMENT_SIZE;
+
+    
     /**
      * CONSTRUCTOR
      */
@@ -33,6 +37,8 @@ public class PlaySound {
 	//this.waveStream = waveStream;
 	this.waveStream = new BufferedInputStream(waveStream);
 	this.SoundPause = i;
+	AUDIO_SEGMENT_SIZE = SoundPause.audio_segment * 8;
+	//System.out.println(AUDIO_SEGMENT_SIZE);
     }
 
 	public void play() throws PlayWaveException {
@@ -61,18 +67,12 @@ public class PlaySound {
 
 	// Starts the music :P
 		dataLine.start();
-	
+		
 		int readBytes = 0;
 		//byte[] audioBuffer = new byte[this.EXTERNAL_BUFFER_SIZE];
-		byte[] audioBuffer = new byte[512];
+		byte[] audioBuffer = new byte[AUDIO_SEGMENT_SIZE];
 		try {
 		    while (readBytes != -1) {
-		    	 System.out.println(SoundPause.i);
-		    while(SoundPause.i == 1){
-		    	if(SoundPause.j == 1) {
-		    		System.exit(0);
-		    	}
-		    }
 			readBytes = audioInputStream.read(audioBuffer, 0,
 				audioBuffer.length);
 			//System.out.println("read audio buffer, " + SoundPause);
